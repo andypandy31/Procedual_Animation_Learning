@@ -1,59 +1,135 @@
 extends Node2D
 
-@export var segment_count : int = 100
-@export var segment_length : float = 5.0
-@export var follow_speed : float = 10.0
-@export var body_width := 10.0
+@export var spine_segment_count := 12
+@export var spine_segment_length := 20.0
 
-var points : Array[Vector2] = []
-var target : Vector2
-var counter : int = 1
-var root_position = Vector2(400, 300)
+@export var arm_segment_count := 10
+@export var arm_segment_length := 5
+
+@export var arm_max_distance := 100.0
+@export var head_follow_speed := 10.0
+
+class Arm:
+	var points: Array[Vector2] = []
+	var desired: Vector2
+	var root_index: int
+	var side : int
+	var forward : float
+
+var spine: Array[Vector2] = []
+var arms: Array[Arm] = []
 
 
-func _ready() -> void:
-	for i in segment_count:
-		points.append(global_position)
+func _ready():
+	init_spine()
+	init_arms()
 
-func _process(delta: float) -> void:
-	var target = get_global_mouse_position()
-	move_head(target, delta)
-	resolve_chain()
+
+func init_spine():
+	spine.clear()
+	var start := global_position
+	for i in range(spine_segment_count):
+		spine.append(start)
+
+
+func init_arms():
+	arms.clear()
+	
+	var front_left_arm  = create_arm(3, -1, -1.0)
+	var front_right_arm = create_arm(3,  1, -1.0)
+	var back_left_arm   = create_arm(6, -1, -1.0)
+	var back_right_arm  = create_arm(6,  1, -1.0)
+
+	arms.append(front_left_arm)
+	arms.append(front_right_arm)
+	arms.append(back_left_arm)
+	arms.append(back_right_arm)
+
+
+func create_arm(root_index: int, side: int, forward: float) -> Arm:
+	var arm := Arm.new()
+	arm.root_index = root_index
+	arm.side = side
+	arm.forward = forward
+	
+	var root_pos := spine[root_index]
+	for i in range(arm_segment_count):
+		arm.points.append(root_pos)
+
+	arm.desired = root_pos
+	return arm
+
+
+func _process(delta):
+	update_spine(get_global_mouse_position(), delta)
+
+	for arm in arms:
+		update_arm_target(arm)
+		solve_arm(arm)
 	queue_redraw()
 
-func move_head(target ,delta : float):
-	points[0] = points[0].lerp(target, follow_speed * delta)
+func get_spine_direction(index: int) -> Vector2:
+	if index == 0:
+		return (spine[1] - spine[0]).normalized()
+	return (spine[index] - spine[index - 1]).normalized()
+
+func update_spine(target: Vector2, delta: float):
+	spine[0] = spine[0].lerp(target, head_follow_speed * delta)
+
+	for i in range(1, spine.size()):
+		var dir := (spine[i] - spine[i - 1]).normalized()
+		spine[i] = spine[i - 1] + dir * spine_segment_length
 
 
-func resolve_chain():
-	for i in range(1, points.size()):
-		var dir = points[i] - points[i - 1]
-		if dir.length() == 0:
-			dir = Vector2.RIGHT
-		dir = dir.normalized()
-		points[i] = points[i - 1] + dir * segment_length
+func update_arm_target(arm: Arm):
+	var root_pos = spine[arm.root_index]
 
-func _draw() -> void:
-	for i in range(points.size() - 1):
-		#draw_line(points[i], points[i + 1], Color.GREEN, 4.0)
-		var angle = get_angle(i)
-		var normal = Vector2(cos(angle + PI/2), sin(angle + PI/2))
-		var width = body_width * (1.0 - float(i) / points.size())
-		
-		draw_line(
-			points[i] + normal * width,
-			points[i + 1] + normal * width,
-			Color.RED,
-			2.0
-		)
-		draw_line(
-			points[i] - normal * width,
-			points[i + 1] - normal * width,
-			Color.GREEN,
-			2.0
-		)
+	var spine_dir := get_spine_direction(arm.root_index)
+	var side_dir  := Vector2(-spine_dir.y, spine_dir.x) * arm.side
+	
+	var forward_offset : float = 50.0
+	var side_offset : float = 25.0
+	
+	var desired_pos = root_pos + spine_dir * forward_offset * arm.forward + side_dir * side_offset
+	
+	if arm.desired.distance_to(desired_pos) > arm_max_distance:
+		print(root_pos)
+		print(desired_pos)
+		arm.desired = desired_pos
 
-func get_angle(i: int) -> float:
-	if i == 0:
-		return (points[1] - points[0]).angle()
-	return (points[i] - points[i - 1]).angle()
+
+func solve_arm(arm: Arm):
+	fabrik_arm(arm.points, arm.desired, spine[arm.root_index])
+
+
+func fabrik_arm(points: Array[Vector2], target: Vector2, root: Vector2):
+	var count := points.size()
+
+	# Forward pass (end effector -> root)
+	points[count - 1] = target
+	for i in range(count - 2, -1, -1):
+		var dir := (points[i] - points[i + 1]).normalized()
+		points[i] = points[i + 1] + dir * arm_segment_length
+
+	# Backward pass (root -> end effector)
+	points[0] = root
+	for i in range(1, count):
+		var dir := (points[i] - points[i - 1]).normalized()
+		points[i] = points[i - 1] + dir * arm_segment_length
+
+
+func _draw():
+	# Draw spine
+	for i in range(spine.size() - 1):
+		draw_line(spine[i], spine[i + 1], Color.GREEN, 3)
+
+	# Draw arms
+	for arm in arms:
+		for i in range(arm.points.size() - 1):
+			draw_line(arm.points[i], arm.points[i + 1], Color.ORANGE, 3)
+
+		# Desired foot target
+		draw_circle(arm.desired, 4, Color.RED)
+
+	# Head
+	draw_circle(spine[0], 6, Color.WHITE)

@@ -1,0 +1,12 @@
+[gd_scene load_steps=2 format=3 uid="uid://dqj36ulxnt8jl"]
+
+[ext_resource type="Script" path="res://snake.gd" id="1_fkoof"]
+
+[node name="Snake" type="Node2D"]
+script = ExtResource("1_fkoof")
+spine_segment_count = null
+spine_segment_length = null
+arm_segment_count = null
+arm_segment_length = null
+arm_max_distance = null
+head_follow_speed = null
