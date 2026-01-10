@@ -1,10 +1,10 @@
 extends Node2D
 
-@export var spine_segment_count := 12
+@export var spine_segment_count := 10
 @export var spine_segment_length := 20.0
 
-@export var arm_segment_count := 10
-@export var arm_segment_length := 5
+@export var arm_segment_count := 3
+@export var arm_segment_length := 20
 
 @export var arm_max_distance := 100.0
 @export var head_follow_speed := 10.0
@@ -21,6 +21,8 @@ var arms: Array[Arm] = []
 
 
 func _ready():
+	spine.clear()
+	arms.clear()
 	init_spine()
 	init_arms()
 
@@ -35,10 +37,10 @@ func init_spine():
 func init_arms():
 	arms.clear()
 	
-	var front_left_arm  = create_arm(3, -1, -1.0)
-	var front_right_arm = create_arm(3,  1, -1.0)
-	var back_left_arm   = create_arm(6, -1, -1.0)
-	var back_right_arm  = create_arm(6,  1, -1.0)
+	var front_left_arm  = create_arm(2, -1.5, -0.9)
+	var front_right_arm = create_arm(2,  1.5, -1)
+	var back_left_arm   = create_arm(7, -1.5, -1)
+	var back_right_arm  = create_arm(7,  1.5, -0.9)
 
 	arms.append(front_left_arm)
 	arms.append(front_right_arm)
@@ -62,7 +64,7 @@ func create_arm(root_index: int, side: int, forward: float) -> Arm:
 
 func _process(delta):
 	update_spine(get_global_mouse_position(), delta)
-
+	
 	for arm in arms:
 		update_arm_target(arm)
 		solve_arm(arm)
@@ -82,6 +84,7 @@ func update_spine(target: Vector2, delta: float):
 
 
 func update_arm_target(arm: Arm):
+	draw_circle(arm.desired, 4, Color.RED)
 	var root_pos = spine[arm.root_index]
 
 	var spine_dir := get_spine_direction(arm.root_index)
@@ -92,9 +95,7 @@ func update_arm_target(arm: Arm):
 	
 	var desired_pos = root_pos + spine_dir * forward_offset * arm.forward + side_dir * side_offset
 	
-	if arm.desired.distance_to(desired_pos) > arm_max_distance:
-		print(root_pos)
-		print(desired_pos)
+	if arm.desired.distance_to(desired_pos) > arm_max_distance * 1.1:
 		arm.desired = desired_pos
 
 
