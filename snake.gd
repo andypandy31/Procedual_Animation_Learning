@@ -4,17 +4,30 @@ extends Node2D
 @export var spine_segment_length := 20.0
 
 @export var arm_segment_count := 3
-@export var arm_segment_length := 20
+@export var arm_segment_length := 50
 
-@export var arm_max_distance := 100.0
+@export var arm_max_distance := 140.0
 @export var head_follow_speed := 10.0
+
+const gait_period : float = 0.8
+
+var gait_time : float = 0.0
+
 
 class Arm:
 	var points: Array[Vector2] = []
 	var desired: Vector2
+	
+	var step_start : Vector2
+	var step_target : Vector2
+	var step_time : float = 1
+	
 	var root_index: int
 	var side : int
 	var forward : float
+	
+	var phase : float
+	var step_cooldown : float = 0.0
 
 var spine: Array[Vector2] = []
 var arms: Array[Arm] = []
@@ -33,26 +46,21 @@ func init_spine():
 	for i in range(spine_segment_count):
 		spine.append(start)
 
-
 func init_arms():
 	arms.clear()
-	
-	var front_left_arm  = create_arm(2, -1.5, -0.9)
-	var front_right_arm = create_arm(2,  1.5, -1)
-	var back_left_arm   = create_arm(7, -1.5, -1)
-	var back_right_arm  = create_arm(7,  1.5, -0.9)
 
-	arms.append(front_left_arm)
-	arms.append(front_right_arm)
-	arms.append(back_left_arm)
-	arms.append(back_right_arm)
+	arms.append(create_arm(2, -2.8, -3.5, 0)) # Front left
+	arms.append(create_arm(2, 2.8, -3.5, 0.5)) # Front right
+	arms.append(create_arm(7, 2.8, -3.5, 0.5)) # Back left
+	arms.append(create_arm(7, -2.8, -3.5, 0)) # Back right
 
 
-func create_arm(root_index: int, side: int, forward: float) -> Arm:
+func create_arm(root_index: int, side: int, forward: float, phase : float) -> Arm:
 	var arm := Arm.new()
 	arm.root_index = root_index
 	arm.side = side
 	arm.forward = forward
+	arm.phase = phase
 	
 	var root_pos := spine[root_index]
 	for i in range(arm_segment_count):
@@ -63,12 +71,45 @@ func create_arm(root_index: int, side: int, forward: float) -> Arm:
 
 
 func _process(delta):
+	gait_time += delta
 	update_spine(get_global_mouse_position(), delta)
-	
+
 	for arm in arms:
-		update_arm_target(arm)
-		solve_arm(arm)
+		var new_target := compute_desired_pos(arm)
+		
+		var phase_time := fmod(gait_time / gait_period + arm.phase, 1.0)
+		
+		if arm.step_time >= 1.0 and arm.desired.distance_to(new_target) > arm_max_distance:
+			start_step(arm, new_target)
+		
+		update_step(arm, delta)
+		fabrik_arm(arm.points, arm.desired, spine[arm.root_index])
+		
+		#update_arm_target(arm)
+		#solve_arm(arm)
+		
 	queue_redraw()
+
+func compute_desired_pos(arm: Arm) -> Vector2:
+	var root := spine[arm.root_index]
+	var spine_dir := get_spine_direction(arm.root_index)
+	var side_dir := Vector2(-spine_dir.y, spine_dir.x) * arm.side
+
+	return root + spine_dir * 30.0 * arm.forward + side_dir * 25.0
+
+func start_step(arm: Arm, new_target: Vector2):
+	if arm.step_time < 1.0:
+		return
+	
+	arm.step_start = arm.desired
+	arm.step_target = new_target
+	arm.step_time = 0.0
+
+func update_step(arm: Arm, delta: float):
+	if arm.step_time < 1.0:
+		arm.step_time += delta * 7
+		arm.step_time = min(arm.step_time, 1.0)
+		arm.desired = arm.step_start.lerp(arm.step_target, arm.step_time)
 
 func get_spine_direction(index: int) -> Vector2:
 	if index == 0:
@@ -81,7 +122,6 @@ func update_spine(target: Vector2, delta: float):
 	for i in range(1, spine.size()):
 		var dir := (spine[i] - spine[i - 1]).normalized()
 		spine[i] = spine[i - 1] + dir * spine_segment_length
-
 
 func update_arm_target(arm: Arm):
 	draw_circle(arm.desired, 4, Color.RED)
@@ -132,5 +172,5 @@ func _draw():
 		# Desired foot target
 		draw_circle(arm.desired, 4, Color.RED)
 
-	# Head
-	draw_circle(spine[0], 6, Color.WHITE)
+	
+	draw_circle(spine[0], 15, Color.RED)
