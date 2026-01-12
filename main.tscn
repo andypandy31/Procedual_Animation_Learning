@@ -1,7 +1,10 @@
-[gd_scene load_steps=2 format=3 uid="uid://rnyilkdff7y"]
+[gd_scene load_steps=3 format=3 uid="uid://rnyilkdff7y"]
 
-[ext_resource type="PackedScene" uid="uid://dqj36ulxnt8jl" path="res://snake.tscn" id="1_3tkyb"]
+[ext_resource type="PackedScene" uid="uid://bdn4elcc4b7aj" path="res://self_attempt_one/traget_path.tscn" id="1_l3r42"]
+[ext_resource type="PackedScene" uid="uid://ddaky32cvt5mn" path="res://self_attempt_one/IK_arm.tscn" id="2_wsiyg"]
 
 [node name="Main" type="Node2D"]
 
-[node name="Snake" parent="." instance=ExtResource("1_3tkyb")]
+[node name="Traget_Path" parent="." instance=ExtResource("1_l3r42")]
+
+[node name="IkArm" parent="." instance=ExtResource("2_wsiyg")]

@@ -1,12 +1,12 @@
 extends Node2D
 
-@export var spine_segment_count := 10
+@export var spine_segment_count := 15
 @export var spine_segment_length := 20.0
 
 @export var arm_segment_count := 3
-@export var arm_segment_length := 50
+@export var arm_segment_length := 20
 
-@export var arm_max_distance := 140.0
+@export var arm_max_distance := 100.0
 @export var head_follow_speed := 10.0
 
 const gait_period : float = 0.8
@@ -49,11 +49,12 @@ func init_spine():
 func init_arms():
 	arms.clear()
 
-	arms.append(create_arm(2, -2.8, -3.5, 0)) # Front left
-	arms.append(create_arm(2, 2.8, -3.5, 0.5)) # Front right
-	arms.append(create_arm(7, 2.8, -3.5, 0.5)) # Back left
-	arms.append(create_arm(7, -2.8, -3.5, 0)) # Back right
-
+	arms.append(create_arm(2, -2, -1.5, 0)) # Front left
+	arms.append(create_arm(2, 2, -1.5, 0.5)) # Front right
+	arms.append(create_arm(7, 2, -1.5, 0.5)) # Back left
+	arms.append(create_arm(7, -2, -1.5, 0)) # Back right
+	arms.append(create_arm(13, 2, -1.5, 0.5)) # Back left
+	arms.append(create_arm(13, -2, -1.5, 0)) # Back right
 
 func create_arm(root_index: int, side: int, forward: float, phase : float) -> Arm:
 	var arm := Arm.new()
@@ -109,7 +110,7 @@ func update_step(arm: Arm, delta: float):
 	if arm.step_time < 1.0:
 		arm.step_time += delta * 7
 		arm.step_time = min(arm.step_time, 1.0)
-		arm.desired = arm.step_start.lerp(arm.step_target, arm.step_time)
+		arm.desired = arm.step_start.lerp(arm.step_target, arm.step_time * 1.2)
 
 func get_spine_direction(index: int) -> Vector2:
 	if index == 0:
@@ -124,7 +125,6 @@ func update_spine(target: Vector2, delta: float):
 		spine[i] = spine[i - 1] + dir * spine_segment_length
 
 func update_arm_target(arm: Arm):
-	draw_circle(arm.desired, 4, Color.RED)
 	var root_pos = spine[arm.root_index]
 
 	var spine_dir := get_spine_direction(arm.root_index)

@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3 uid="uid://ddaky32cvt5mn"]
+
+[ext_resource type="Script" path="res://self_attempt_one/ik_arm.gd" id="1_25nt2"]
+
+[node name="IkArm" type="Node2D"]
+script = ExtResource("1_25nt2")
