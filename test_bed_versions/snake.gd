@@ -1,9 +1,11 @@
 extends Node2D
 
+@onready var target := get_node_or_null("../Traget_Path/Target_PathFollow") as PathFollow2D
+
 @export var spine_segment_count := 15
 @export var spine_segment_length := 20.0
 
-@export var arm_segment_count := 3
+@export var arm_segment_count := 4
 @export var arm_segment_length := 20
 
 @export var arm_max_distance := 100.0
