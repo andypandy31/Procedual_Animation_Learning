@@ -3,50 +3,44 @@ extends Node2D
 @export var number_joints : int = 10
 @export var joint_length : int = 50
 @export var root : Vector2 = Vector2(500,500)
-@export var holder : int
 @export var head_follow_speed : int = 5
 
 @onready var target := get_node_or_null("../Traget_Path/Target_PathFollow") as PathFollow2D
 
 var joints : Array[Vector2] = []
 
+
 # Called when the node enters the scene tree for the first time.
 func _ready() -> void:
 	joint_creation()
+
 
 func joint_creation():
 	joints.clear()
 	for i in range(number_joints):
 		joints.append(root)
 
+
 # Called every frame. 'delta' is the elapsed time since the previous frame.
 func _process(delta: float) -> void:
-	#test_update(get_global_mouse_position(), delta)
 	update_joints(joints, target.global_position)
 	queue_redraw()
 
-
-func test_update(target: Vector2, delta: float):
-	joints[0] = joints[0].lerp(target, head_follow_speed * delta)
-
-	for i in range(1, joints.size()):
-		var dir := (joints[i] - joints[i - 1]).normalized()
-		joints[i] = joints[i - 1] + dir * joint_length
-
 func update_joints(joints: Array[Vector2], target: Vector2,):
-	var count := joints.size()
+	var joint_count := joints.size()
 
 	# Forward pass (end effector -> root)
-	joints[count - 1] = target
-	for i in range(count - 2, -1, -1):
+	joints[joint_count - 1] = target
+	for i in range(joint_count - 2, -1, -1):
 		var dir := (joints[i] - joints[i + 1]).normalized()
 		joints[i] = joints[i + 1] + dir * joint_length
 
 	# Backward pass (root -> end effector)
 	joints[0] = root
-	for i in range(1, count):
+	for i in range(1, joint_count):
 		var dir := (joints[i] - joints[i - 1]).normalized()
 		joints[i] = joints[i - 1] + dir * joint_length
+
 
 func _draw():
 	# Draw spine

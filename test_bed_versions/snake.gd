@@ -1,8 +1,8 @@
 extends Node2D
 
-@onready var target := get_node_or_null("../Traget_Path/Target_PathFollow") as PathFollow2D
+@onready var target_auto := get_node_or_null("../Traget_Path/Target_PathFollow") as PathFollow2D
 
-@export var spine_segment_count := 15
+@export var spine_segment_count := 20
 @export var spine_segment_length := 20.0
 
 @export var arm_segment_count := 4
@@ -11,10 +11,13 @@ extends Node2D
 @export var arm_max_distance := 100.0
 @export var head_follow_speed := 10.0
 
-const gait_period : float = 0.8
+enum {
+	LIMB_LEN,
+	LIMB_MIN,
+	LIMB_MAX
+}
 
-var gait_time : float = 0.0
-
+const BIAS = 3
 
 class Arm:
 	var points: Array[Vector2] = []
@@ -55,8 +58,10 @@ func init_arms():
 	arms.append(create_arm(2, 2, -1.5, 0.5)) # Front right
 	arms.append(create_arm(7, 2, -1.5, 0.5)) # Back left
 	arms.append(create_arm(7, -2, -1.5, 0)) # Back right
-	arms.append(create_arm(13, 2, -1.5, 0.5)) # Back left
-	arms.append(create_arm(13, -2, -1.5, 0)) # Back right
+	arms.append(create_arm(11, 2, -1.5, 0.5)) # Back left
+	arms.append(create_arm(11, -2, -1.5, 0)) # Back right
+	arms.append(create_arm(14, 2, -1.5, 0.5)) # Back left
+	arms.append(create_arm(14, -2, -1.5, 0)) # Back right
 
 func create_arm(root_index: int, side: int, forward: float, phase : float) -> Arm:
 	var arm := Arm.new()
@@ -74,13 +79,10 @@ func create_arm(root_index: int, side: int, forward: float, phase : float) -> Ar
 
 
 func _process(delta):
-	gait_time += delta
-	update_spine(get_global_mouse_position(), delta)
+	update_spine(target_auto.global_position, delta)
 
 	for arm in arms:
 		var new_target := compute_desired_pos(arm)
-		
-		var phase_time := fmod(gait_time / gait_period + arm.phase, 1.0)
 		
 		if arm.step_time >= 1.0 and arm.desired.distance_to(new_target) > arm_max_distance:
 			start_step(arm, new_target)
@@ -110,7 +112,7 @@ func start_step(arm: Arm, new_target: Vector2):
 
 func update_step(arm: Arm, delta: float):
 	if arm.step_time < 1.0:
-		arm.step_time += delta * 7
+		arm.step_time += delta * 10
 		arm.step_time = min(arm.step_time, 1.0)
 		arm.desired = arm.step_start.lerp(arm.step_target, arm.step_time * 1.2)
 
@@ -136,6 +138,10 @@ func update_arm_target(arm: Arm):
 	var side_offset : float = 25.0
 	
 	var desired_pos = root_pos + spine_dir * forward_offset * arm.forward + side_dir * side_offset
+	
+	if arm.desired.distance_to(spine[arm.root_index]) < arm_segment_length * 5:
+		print("did do")
+		arm.desired = desired_pos
 	
 	if arm.desired.distance_to(desired_pos) > arm_max_distance * 1.1:
 		arm.desired = desired_pos

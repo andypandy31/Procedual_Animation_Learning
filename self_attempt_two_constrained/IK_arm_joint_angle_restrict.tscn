@@ -1,3 +1,6 @@
-[gd_scene format=3 uid="uid://dmxy0n82j2rxg"]
+[gd_scene load_steps=2 format=3 uid="uid://dmxy0n82j2rxg"]
+
+[ext_resource type="Script" path="res://self_attempt_two_constrained/ik_arm_joint_angle_restrict.gd" id="1_np6o7"]
 
 [node name="IkArmJointAngleRestrict" type="Node2D"]
+script = ExtResource("1_np6o7")
