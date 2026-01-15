@@ -11,13 +11,6 @@ extends Node2D
 @export var arm_max_distance := 100.0
 @export var head_follow_speed := 10.0
 
-enum {
-	LIMB_LEN,
-	LIMB_MIN,
-	LIMB_MAX
-}
-
-const BIAS = 3
 
 class Arm:
 	var points: Array[Vector2] = []
